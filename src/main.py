@@ -5,7 +5,7 @@ import seaborn as sns
 
 import xgboost as xgb
 # from sklearn.metrics import mean_squared_error
-# import sklearn
+
 
 color_pal = sns.color_palette
 plt.style.use('fivethirtyeight')
@@ -88,4 +88,35 @@ reg.fit(X_train, y_train,
         verbose=100)
 
 
+# Plot Feature Importance
+fi = pd.DataFrame(data=reg.feature_importances_,
+                  index=reg.feature_names_in_,
+                  columns=['importance'])
+fi.sort_values('importance').plot(kind='barh', title='Feature Importance')
 
+# Plot Predictions
+test['prediction'] = reg.predict(X_test)
+df = df.merge(test[['prediction']], how='left',
+              left_index=True, right_index=True)
+ax = df[['PJME_MW']].plot(figsize=(15, 5))
+df['prediction'].plot(ax=ax, style='.')
+plt.legend(['Truth Data', 'Predictions'])
+ax.set_title('Raw Dat and Prediction')
+
+# Plot Residuals
+ax = df.loc[(df.index > '04-01-2018') & (df.index < '04-08-2018')]['PJME_MW'] \
+    .plot(figsize=(15, 5), title='Week Of Data')
+df.loc[(df.index > '04-01-2018') & (df.index < '04-08-2018')]['prediction'] \
+    .plot(style='.')
+plt.legend(['Truth Data', 'Prediction'])
+
+
+# Plot Residuals
+score = np.sqrt(mean_squared_error(test['PJME_MW'], test['prediction']))
+print(f'RMSE Score on Test set: {score:0.2f}')
+
+test['error'] = np.abs(test[TARGET] - test['prediction'])
+test['date'] = test.index.date
+test.groupby(['date'])['error'].mean().sort_values(ascending=False).head(10)
+
+plt.show()
