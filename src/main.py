@@ -1,10 +1,11 @@
-import datetime as dt
-
-import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
 import seaborn as sns
+
 import xgboost as xgb
+# from sklearn.metrics import mean_squared_error
+# import sklearn
 
 color_pal = sns.color_palette
 plt.style.use('fivethirtyeight')
@@ -62,6 +63,29 @@ ax.set_title('MW by Hour')
 fig, ax = plt.subplots(figsize=(10, 8))
 sns.boxplot(data=df, x='month', y='PJME_MW', palette='Blues')
 ax.set_title('MW by Month')
-plt.show()
+
+# Create a regression model
+train = create_features(train)
+test = create_features(test)
+
+FEATURES = ['dayofyear', 'hour', 'dayofweek', 'quarter', 'month', 'year']
+TARGET = 'PJME_MW'
+
+X_train = train[FEATURES]
+y_train = train[TARGET]
+
+X_test = test[FEATURES]
+y_test = test[TARGET]
+
+reg = xgb.XGBRegressor(base_score=0.5, booster='gbtree',
+                       n_estimators=1000,
+                       early_stopping_rounds=50,
+                       objective='reg:linear',
+                       max_depth=3,
+                       learning_rate=0.01)
+reg.fit(X_train, y_train,
+        eval_set=[(X_train, y_train), (X_test, y_test)],
+        verbose=100)
+
 
 
